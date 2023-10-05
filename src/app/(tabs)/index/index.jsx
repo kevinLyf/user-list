@@ -1,20 +1,23 @@
+import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
+import { Alert, FlatList, View } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import {
   ActivityIndicator,
   Appbar,
   Avatar,
+  Button,
   Text,
+  TextInput,
   Title,
 } from "react-native-paper";
-import Api from "../../../services/api";
 import styled from "styled-components";
-import { router } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-
-const { View, Alert, FlatList } = require("react-native");
+import Api from "../../../services/api";
 
 const Home = () => {
   const [users, setUsers] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     getUsers();
@@ -31,13 +34,37 @@ const Home = () => {
 
   const renderItem = ({ item }) => {
     return (
-      <Card>
-        <Avatar.Image source={{ uri: item.picture.large }} />
-        <Body>
-          <Title>{item.name.first}</Title>
-          <Text>{item.email}</Text>
-        </Body>
-      </Card>
+      <TouchableOpacity
+        delayLongPress={700}
+        onLongPress={() => {
+          if (!selected.includes(item.login.uuid) && selected.length == 0) {
+            setSelected(selected.concat(item.login.uuid));
+          } else if (selected.length == 0) {
+            setSelected(selected.filter((id) => id != item.login.uuid));
+          }
+        }}
+        onPress={() => {
+          if (!selected.includes(item.login.uuid) && selected.length > 0) {
+            setSelected(selected.concat(item.login.uuid));
+          } else {
+            setSelected(selected.filter((id) => id != item.login.uuid));
+          }
+        }}
+      >
+        <Card>
+          {selected.includes(item.login.uuid) ? (
+            <Avatar.Icon icon="check" style={{ backgroundColor: "#2469f4" }} />
+          ) : (
+            <Avatar.Image source={{ uri: item.picture.large }} />
+          )}
+          <Body>
+            <Title>
+              {item.name.first} {item.name.last}
+            </Title>
+            <Text>{item.email}</Text>
+          </Body>
+        </Card>
+      </TouchableOpacity>
     );
   };
 
@@ -53,27 +80,66 @@ const Home = () => {
     <View>
       <StatusBar backgroundColor="#2469f4" style="light" />
       <Appbar style={{ backgroundColor: "#2469f4" }}>
+        <Appbar.Action icon="blank" color="#ffffff" />
         <Appbar.Content
-          title="Usuários"
+          title={
+            selected.length == 0 ? "Users" : `Selected: ${selected.length}`
+          }
           titleStyle={{
             textAlign: "center",
             fontWeight: "bold",
             color: "#ffffff",
           }}
         />
-        <Appbar.Action
-          icon="magnify"
-          color="#ffffff"
-          onPress={() => router.push("/search")}
-        />
+        <Appbar.Action icon="tune" color="#ffffff" />
       </Appbar>
+      <Input
+        onChangeText={(text) => setSearch(text)}
+        value={search}
+        placeholder="Find a person"
+        focusable={false}
+        left={<TextInput.Icon icon="magnify" color="#2469f4" />}
+        mode="outlined"
+        cursorColor="#2469f4"
+        outlineColor="#3e7bf5"
+        activeOutlineColor="#2469f4"
+      />
+      {selected.length > 0 && selected.length != users.length ? (
+        <Button
+          onPress={() => {
+            setSelected(users.map((item) => item.login.uuid));
+          }}
+          style={{ alignSelf: "flex-end" }}
+          labelStyle={{ color: "#2469f4" }}
+        >
+          Select All
+        </Button>
+      ) : null}
+      {selected.length == users.length ? (
+        <Button
+          onPress={() => {
+            setSelected([]);
+          }}
+          style={{ alignSelf: "flex-end" }}
+          labelStyle={{ color: "#2469f4" }}
+        >
+          Unselect All
+        </Button>
+      ) : null}
       <FlatList
-        data={users}
+        data={users.filter(
+          (user) =>
+            `${user.name.first} ${user.name.last}`
+              .toLocaleLowerCase()
+              .includes(search.toLocaleLowerCase()) ||
+            user.email.toLocaleLowerCase().includes(search.toLocaleLowerCase())
+        )}
         keyExtractor={(users) => users.login.uuid}
         renderItem={renderItem}
         onEndReached={getUsers}
         ListFooterComponent={renderLoading}
         onEndReachedThreshold={0.5}
+        style={{ marginLeft: 10, marginRight: 10 }}
       />
     </View>
   );
@@ -81,11 +147,15 @@ const Home = () => {
 
 export default Home;
 
+export const Input = styled(TextInput)`
+  margin: 10px;
+`;
+
 const Card = styled.View`
   width: 100%;
   height: 80px;
   border-radius: 3px;
-  margin: 5px;
+  margin: 10px 0px;
   padding: 5px;
   flex-direction: row;
 `;
