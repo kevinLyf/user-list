@@ -28,12 +28,8 @@ const Home = () => {
       titleStyle: { color: "#000", fontWeight: "bold" },
 
       onPress: () => {
-        setUsers(
-          users.filter((user) => {
-            user.gender == "male";
-            setOpen(false);
-          })
-        );
+        setUsers(users.sort((a, b) => (a.gender == "male" ? -1 : 1)));
+        setOpen(false);
       },
     },
     {
@@ -41,12 +37,8 @@ const Home = () => {
       titleStyle: { color: "#000", fontWeight: "bold" },
 
       onPress: () => {
-        setUsers(
-          users.filter((user) => {
-            user.gender == "female";
-            setOpen(false);
-          })
-        );
+        setUsers(users.sort((a, b) => (a.gender == "female" ? -1 : 1)));
+        setOpen(false);
       },
     },
     {
@@ -102,6 +94,7 @@ const Home = () => {
               {item.name.first} {item.name.last}
             </Title>
             <Text>{item.email}</Text>
+            <Text>{item.gender}</Text>
           </Body>
         </Card>
       </TouchableOpacity>
