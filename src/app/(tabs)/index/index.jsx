@@ -13,11 +13,51 @@ import {
 } from "react-native-paper";
 import styled from "styled-components";
 import Api from "../../../services/api";
+import { BottomSheet, ListItem } from "@rneui/themed";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 const Home = () => {
   const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState([]);
   const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const list = [
+    {
+      title: "Male",
+      titleStyle: { color: "#000", fontWeight: "bold" },
+
+      onPress: () => {
+        setUsers(
+          users.filter((user) => {
+            user.gender == "male";
+            setOpen(false);
+          })
+        );
+      },
+    },
+    {
+      title: "Female",
+      titleStyle: { color: "#000", fontWeight: "bold" },
+
+      onPress: () => {
+        setUsers(
+          users.filter((user) => {
+            user.gender == "female";
+            setOpen(false);
+          })
+        );
+      },
+    },
+    {
+      title: "Cancel",
+      titleStyle: { color: "#ffffff", fontWeight: "bold" },
+      containerStyle: {
+        backgroundColor: "red",
+      },
+      onPress: () => setOpen(false),
+    },
+  ];
 
   useEffect(() => {
     getUsers();
@@ -77,71 +117,111 @@ const Home = () => {
   };
 
   return (
-    <View>
-      <StatusBar backgroundColor="#2469f4" style="light" />
-      <Appbar style={{ backgroundColor: "#2469f4" }}>
-        <Appbar.Action icon="blank" color="#ffffff" />
-        <Appbar.Content
-          title={
-            selected.length == 0 ? "Users" : `Selected: ${selected.length}`
-          }
-          titleStyle={{
-            textAlign: "center",
-            fontWeight: "bold",
-            color: "#ffffff",
-          }}
+    <SafeAreaProvider>
+      <View>
+        <StatusBar backgroundColor="#2469f4" style="light" />
+        <Appbar style={{ backgroundColor: "#2469f4" }}>
+          <Appbar.Action icon="blank" color="#ffffff" />
+          <Appbar.Content
+            title={
+              selected.length == 0 ? "Users" : `Selected: ${selected.length}`
+            }
+            titleStyle={{
+              textAlign: "center",
+              fontWeight: "bold",
+              color: "#ffffff",
+            }}
+          />
+          <Appbar.Action
+            icon="tune"
+            color="#ffffff"
+            onPress={() => setOpen(true)}
+          />
+        </Appbar>
+        <Input
+          onChangeText={(text) => setSearch(text)}
+          value={search}
+          placeholder="Find a person"
+          focusable={false}
+          left={<TextInput.Icon icon="magnify" color="#2469f4" />}
+          mode="outlined"
+          cursorColor="#2469f4"
+          outlineColor="#3e7bf5"
+          activeOutlineColor="#2469f4"
         />
-        <Appbar.Action icon="tune" color="#ffffff" />
-      </Appbar>
-      <Input
-        onChangeText={(text) => setSearch(text)}
-        value={search}
-        placeholder="Find a person"
-        focusable={false}
-        left={<TextInput.Icon icon="magnify" color="#2469f4" />}
-        mode="outlined"
-        cursorColor="#2469f4"
-        outlineColor="#3e7bf5"
-        activeOutlineColor="#2469f4"
-      />
-      {selected.length > 0 && selected.length != users.length ? (
-        <Button
-          onPress={() => {
-            setSelected(users.map((item) => item.login.uuid));
-          }}
-          style={{ alignSelf: "flex-end" }}
-          labelStyle={{ color: "#2469f4" }}
+        <Options>
+          {selected.length > 0 && selected.length != users.length ? (
+            <Button
+              onPress={() => {
+                setSelected([]);
+              }}
+              style={{ alignSelf: "flex-end" }}
+              labelStyle={{ color: "#2469f4" }}
+            >
+              Cancel
+            </Button>
+          ) : null}
+          {selected.length > 0 && selected.length != users.length ? (
+            <Button
+              onPress={() => {
+                setSelected(users.map((item) => item.login.uuid));
+              }}
+              style={{ alignSelf: "flex-end" }}
+              labelStyle={{ color: "#2469f4" }}
+            >
+              Select All
+            </Button>
+          ) : null}
+          {selected.length == users.length ? (
+            <Button
+              onPress={() => {
+                setSelected([]);
+              }}
+              style={{ alignSelf: "flex-end" }}
+              labelStyle={{ color: "#2469f4" }}
+            >
+              Unselect All
+            </Button>
+          ) : null}
+        </Options>
+        <BottomSheet
+          isVisible={open}
+          containerStyle={{ backgroundColor: "transparent" }}
+          onBackdropPress={() => setOpen(false)}
         >
-          Select All
-        </Button>
-      ) : null}
-      {selected.length == users.length ? (
-        <Button
-          onPress={() => {
-            setSelected([]);
-          }}
-          style={{ alignSelf: "flex-end" }}
-          labelStyle={{ color: "#2469f4" }}
-        >
-          Unselect All
-        </Button>
-      ) : null}
-      <FlatList
-        data={users.filter(
-          (user) =>
-            `${user.name.first} ${user.name.last}`
-              .toLocaleLowerCase()
-              .includes(search.toLocaleLowerCase()) ||
-            user.email.toLocaleLowerCase().includes(search.toLocaleLowerCase())
-        )}
-        keyExtractor={(users) => users.login.uuid}
-        renderItem={renderItem}
-        onEndReached={getUsers}
-        ListFooterComponent={renderLoading}
-        onEndReachedThreshold={0.5}
-        style={{ marginLeft: 10, marginRight: 10 }}
-      />
-    </View>
+          {list.map((item, i) => (
+            <ListItem
+              key={i}
+              containerStyle={item.containerStyle}
+              onPress={item.onPress}
+            >
+              <ListItem.Content>
+                <ListItem.Title style={item.titleStyle}>
+                  {item.title}
+                </ListItem.Title>
+              </ListItem.Content>
+            </ListItem>
+          ))}
+        </BottomSheet>
+        <FlatList
+          data={users.filter(
+            (user) =>
+              `${user.name.first} ${user.name.last}`
+                .toLocaleLowerCase()
+                .includes(search.toLocaleLowerCase()) ||
+              user.email
+                .toLocaleLowerCase()
+                .includes(search.toLocaleLowerCase())
+          )}
+          keyExtractor={(users) => users.login.uuid}
+          renderItem={renderItem}
+          onEndReached={getUsers}
+          ListFooterComponent={renderLoading}
+          onEndReachedThreshold={0.5}
+          style={{ marginLeft: 10, marginRight: 10 }}
+        />
+      </View>
+    </SafeAreaProvider>
   );
 };
 
@@ -171,4 +251,10 @@ export const Loading = styled.View`
   padding: 30px;
   justify-content: flex-start;
   align-items: center;
+`;
+
+export const Options = styled.View`
+  justify-content: flex-end;
+  flex-direction: row;
+  gap: 10px;
 `;
